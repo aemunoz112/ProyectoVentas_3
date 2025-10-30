@@ -1,0 +1,79 @@
+# =====================================
+# 🚀 FASTAPI / PYTHON PROJECT .gitignore
+# =====================================
+
+# 🐍 Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 🧠 Cachés de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 🧰 Configuración del entorno
+*.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# 🧩 Configuración del IDE (VS Code, PyCharm, etc.)
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 📦 Dependencias de sistema o compiladas
+*.so
+*.dll
+*.dylib
+*.pyd
+
+# 📁 Archivos de logs y bases de datos locales
+*.log
+*.sqlite3
+*.db
+*.bak
+
+# 🗃️ Archivos de pruebas o cobertura
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# 📂 Build y distribución
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ⚙️ Archivos de configuración de herramientas
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 🧾 Documentación o reportes temporales
+docs/_build/
+*.tmp
+*.temp
+*.swp
+
+# ⚡ Uvicorn / FastAPI / Pydantic / Alembic
+*.pid
+alembic/versions/*.pyc
+alembic/__pycache__/
+
+# 📸 Archivos generados temporalmente
+.DS_Store
+Thumbs.db
