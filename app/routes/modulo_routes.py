@@ -30,3 +30,8 @@ async def get_modulos_activos():
 async def delete_modulo(modulo_id: int):
     rpta = nuevo_modulo.delete_modulo(modulo_id)
     return rpta
+
+@router.put("/update_modulo/{modulo_id}")
+async def update_modulo(modulo_id: int, modulo: Modulo):
+    rpta = nuevo_modulo.update_modulo(modulo_id, modulo)
+    return rpta

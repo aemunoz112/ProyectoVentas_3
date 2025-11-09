@@ -18,9 +18,11 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 origins = [
+    "http://localhost",
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
     #"http://localhost.tiangolo.com",
     #"https://localhost.tiangolo.com",
-    "http://localhost"
     #"http://localhost:8080",
 ]
 
