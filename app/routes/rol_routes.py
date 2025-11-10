@@ -33,3 +33,4 @@ async def update_rol(rol_id: int, rol: RolUpdateModel):
 async def delete_rol(rol_id: int):
     return rol_controller.delete_rol(rol_id)
 
+

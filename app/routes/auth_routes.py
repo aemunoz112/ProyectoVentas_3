@@ -13,3 +13,4 @@ auth_controller = AuthController()
 async def login(credentials: LoginModel):
     return auth_controller.login(credentials)
 
+

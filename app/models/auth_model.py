@@ -5,3 +5,4 @@ class LoginModel(BaseModel):
     email: EmailStr
     password: str
 
+

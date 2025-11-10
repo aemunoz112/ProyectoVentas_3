@@ -60,3 +60,4 @@ class MenuItemTree(BaseModel):
 
 MenuItemTree.update_forward_refs()
 
+

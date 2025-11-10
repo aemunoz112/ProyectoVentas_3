@@ -43,3 +43,4 @@ async def delete_menu_item(item_id: int):
 async def assign_menu_item(item_id: int, assignment: MenuAssignment):
     return menu_controller.assign_menu_item(item_id, assignment)
 
+
