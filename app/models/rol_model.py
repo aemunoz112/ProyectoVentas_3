@@ -2,9 +2,26 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class RolBaseModel(BaseModel):
-    id: str = None
+    id: int | None = None
     nombre: str
-    descripcion: str
-    estado: str = None
-    created_at: datetime = None
-    updated_at: datetime = None
+    descripcion: str | None = None
+    estado: str | None = "Activo"
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class RolModuloAssign(BaseModel):
+    modulo_id: int
+    permisos: list[str] | None = None
+    estado: str | None = "Activo"
+
+
+class RolCreateModel(BaseModel):
+    nombre: str
+    descripcion: str | None = None
+    estado: str | None = "Activo"
+    modulos: list[RolModuloAssign] = []
+
+
+class RolUpdateModel(RolCreateModel):
+    pass

@@ -28,3 +28,9 @@ async def get_users():
 async def delete_user(user_id: int):
     rpta = nuevo_usuario.delete_user(user_id)
     return rpta
+
+
+@router.put("/update_user/{user_id}")
+async def update_user(user_id: int, user: Usuario):
+    rpta = nuevo_usuario.update_user(user_id, user)
+    return rpta
