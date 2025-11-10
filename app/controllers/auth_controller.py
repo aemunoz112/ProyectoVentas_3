@@ -3,6 +3,7 @@ import mysql.connector
 import json
 
 from app.config.db_config import get_db_connection
+from app.controllers.menu_controller import MenuController
 
 
 class AuthController:
@@ -58,52 +59,19 @@ class AuthController:
                 "estado": rol[3]
             }
 
-            # Modulos asociados al rol
-            cursor.execute(
-                """
-                SELECT
-                    mxr.id,
-                    m.id,
-                    m.nombre,
-                    m.descripcion,
-                    m.ruta,
-                    mxr.permisos,
-                    mxr.estado
-                FROM moduloXrol mxr
-                JOIN modulos m ON m.id = mxr.modulo_id
-                WHERE mxr.rol_id = %s
-                """,
-                (rol_data["id"],)
-            )
-            modulos_result = cursor.fetchall()
-
-            modulos = []
-            for modulo in modulos_result:
-                permisos_raw = modulo[5] or "[]"
-                if isinstance(permisos_raw, str):
-                    try:
-                        permisos = json.loads(permisos_raw)
-                    except json.JSONDecodeError:
-                        permisos = [permisos_raw]
-                else:
-                    permisos = permisos_raw
-
-                modulos.append(
-                    {
-                        "id": modulo[0],
-                        "modulo_id": modulo[1],
-                        "nombre_modulo": modulo[2],
-                        "descripcion": modulo[3],
-                        "ruta": modulo[4],
-                        "permisos": permisos,
-                        "estado": modulo[6]
-                    }
-                )
+            menu_controller = MenuController()
+            try:
+                menu_tree = menu_controller.get_menu_tree_by_role(rol_data["id"])
+            except HTTPException as menu_error:
+                # Si la tabla aún no existe o no hay configuración, permitimos el ingreso sin menú
+                print(f"Advertencia al obtener menú para el rol {rol_data['id']}: {menu_error.detail}")
+                menu_tree = []
 
             return {
                 "usuario": usuario_data,
                 "rol": rol_data,
-                "modulos": modulos
+                "menu": menu_tree,
+                "modulos": menu_tree
             }
 
         except mysql.connector.Error as err:

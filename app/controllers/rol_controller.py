@@ -21,9 +21,16 @@ class RolController:
             conn.commit()
             rol_id = cursor.lastrowid
 
-            if rol.modulos:
-                self._sincronizar_modulos(cursor, rol_id, rol.modulos, reemplazar=False)
-                conn.commit()
+            modulos = getattr(rol, "modulos", None)
+            menu_items = getattr(rol, "menu_items", None)
+
+            if modulos:
+                self._sincronizar_modulos(cursor, rol_id, modulos, reemplazar=False)
+
+            if menu_items:
+                self._sincronizar_menu_items(cursor, rol_id, menu_items, reemplazar=False)
+
+            conn.commit()
 
             return {"mensaje": "Rol creado exitosamente", "id": rol_id}
 
@@ -52,7 +59,8 @@ class RolController:
                 "estado": result[3],
                 "created_at": str(result[4]),
                 "updated_at": str(result[5]),
-                "modulos": self._obtener_modulos_por_rol(cursor, rol_id)
+                "modulos": self._obtener_modulos_por_rol(cursor, rol_id),
+                "menu_items": self._obtener_menu_por_rol(cursor, rol_id)
             }
 
             return jsonable_encoder(content)
@@ -85,7 +93,8 @@ class RolController:
                         "estado": data[3],
                         "created_at": str(data[4]),
                         "updated_at": str(data[5]),
-                        "modulos": self._obtener_modulos_por_rol(cursor, rol_id)
+                        "modulos": self._obtener_modulos_por_rol(cursor, rol_id),
+                        "menu_items": self._obtener_menu_por_rol(cursor, rol_id)
                     }
                 )
 
@@ -117,7 +126,11 @@ class RolController:
             """
             cursor.execute(update_query, (rol.nombre, rol.descripcion, rol.estado or "Activo", rol_id))
 
-            self._sincronizar_modulos(cursor, rol_id, rol.modulos, reemplazar=True)
+            modulos = getattr(rol, "modulos", None)
+            menu_items = getattr(rol, "menu_items", None)
+
+            self._sincronizar_modulos(cursor, rol_id, modulos, reemplazar=True)
+            self._sincronizar_menu_items(cursor, rol_id, menu_items, reemplazar=True)
 
             conn.commit()
 
@@ -141,6 +154,7 @@ class RolController:
                 raise HTTPException(status_code=404, detail="Rol no encontrado")
 
             cursor.execute("DELETE FROM moduloXrol WHERE rol_id = %s", (rol_id,))
+            cursor.execute("DELETE FROM menu_itemXrol WHERE rol_id = %s", (rol_id,))
             cursor.execute("DELETE FROM roles WHERE id = %s", (rol_id,))
             conn.commit()
 
@@ -208,3 +222,81 @@ class RolController:
                 )
             )
 
+    def _obtener_menu_por_rol(self, cursor, rol_id: int):
+        cursor.execute(
+            """
+            SELECT mxr.id,
+                   mxr.menu_item_id,
+                   mi.nombre,
+                   mi.ruta,
+                   mxr.puede_ver,
+                   mxr.puede_crear,
+                   mxr.puede_editar,
+                   mxr.puede_eliminar,
+                   mxr.created_at,
+                   mxr.updated_at
+            FROM menu_itemXrol mxr
+            JOIN menu_items mi ON mi.id = mxr.menu_item_id
+            WHERE mxr.rol_id = %s
+            """,
+            (rol_id,),
+        )
+        data = cursor.fetchall()
+        payload = []
+        for row in data:
+            permisos = []
+            if row[4]:
+                permisos.append("ver")
+            if row[5]:
+                permisos.append("crear")
+            if row[6]:
+                permisos.append("editar")
+            if row[7]:
+                permisos.append("eliminar")
+
+            payload.append(
+                {
+                    "id": row[0],
+                    "menu_item_id": row[1],
+                    "nombre_menu": row[2],
+                    "ruta": row[3],
+                    "permisos": permisos,
+                    "created_at": str(row[8]) if row[8] else None,
+                    "updated_at": str(row[9]) if row[9] else None,
+                }
+            )
+        return payload
+
+    def _sincronizar_menu_items(self, cursor, rol_id: int, menu_items, reemplazar: bool = False):
+        if reemplazar:
+            cursor.execute("DELETE FROM menu_itemXrol WHERE rol_id = %s", (rol_id,))
+
+        if not menu_items:
+            return
+
+        insert_query = """
+        INSERT INTO menu_itemXrol (
+            rol_id,
+            menu_item_id,
+            puede_ver,
+            puede_crear,
+            puede_editar,
+            puede_eliminar,
+            created_at,
+            updated_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+        """
+        for item in menu_items:
+            permisos = set(item.permisos or [])
+            cursor.execute(
+                insert_query,
+                (
+                    rol_id,
+                    item.menu_item_id,
+                    1 if "ver" in permisos else 0,
+                    1 if "crear" in permisos else 0,
+                    1 if "editar" in permisos else 0,
+                    1 if "eliminar" in permisos else 0,
+                ),
+            )

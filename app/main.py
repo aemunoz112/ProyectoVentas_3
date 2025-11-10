@@ -11,6 +11,7 @@ from app.routes.detallePedido_routes import router as detallePedido_router
 from app.routes.modulo_routes import router as modulo_router
 from app.routes.moduloXrol_routes import router as moduloXrol_router
 from app.routes.auth_routes import router as auth_router
+from app.routes.menu_routes import router as menu_router
 from app.routes.rol_routes import router as rol_router
 from app.routes.atributo_routes import router as atributo_router
 from app.routes.atributoXusuario_routes import router as atributoXusuario_router
@@ -41,6 +42,7 @@ app.include_router(rol_router)
 app.include_router(auth_router)
 app.include_router(modulo_router)
 app.include_router(moduloXrol_router)
+app.include_router(menu_router)
 app.include_router(atributo_router)
 app.include_router(atributoXusuario_router)
 app.include_router(estado_router)
