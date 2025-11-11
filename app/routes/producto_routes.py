@@ -1,27 +1,38 @@
-from fastapi import APIRouter
-from app.controllers.producto_controller import *
-from app.models.producto_model import ProductoBaseModel as Producto
+from typing import List
 
-router = APIRouter()
+from fastapi import APIRouter, status
 
-nuevo_producto = ProductoController()
+from app.controllers.producto_controller import ProductoController
+from app.models.producto_model import (
+    ProductoCreateModel,
+    ProductoResponseModel,
+    ProductoUpdateModel,
+)
 
-@router.post("/create_producto")
-async def create_producto(producto: Producto):
-    rpta = nuevo_producto.create_producto(producto)
-    return rpta
+router = APIRouter(prefix="/productos", tags=["productos"])
+controller = ProductoController()
 
-@router.get("/get_producto/{producto_id}")
-async def get_producto(producto_id: int):
-    rpta = nuevo_producto.get_producto(producto_id)
-    return rpta
 
-@router.get("/get_productos/")
-async def get_productos():
-    rpta = nuevo_producto.get_productos()
-    return rpta
+@router.get("/", response_model=List[ProductoResponseModel])
+async def listar_productos():
+    return controller.listar_productos()
 
-@router.delete("/delete_producto/{producto_id}")
-async def delete_producto(producto_id: int):
-    rpta = nuevo_producto.delete_producto(producto_id)
-    return rpta
+
+@router.get("/{producto_id}", response_model=ProductoResponseModel)
+async def obtener_producto(producto_id: int):
+    return controller.obtener_producto(producto_id)
+
+
+@router.post("/", response_model=ProductoResponseModel, status_code=status.HTTP_201_CREATED)
+async def crear_producto(producto: ProductoCreateModel):
+    return controller.crear_producto(producto)
+
+
+@router.put("/{producto_id}", response_model=ProductoResponseModel)
+async def actualizar_producto(producto_id: int, producto: ProductoUpdateModel):
+    return controller.actualizar_producto(producto_id, producto)
+
+
+@router.delete("/{producto_id}")
+async def eliminar_producto(producto_id: int):
+    return controller.eliminar_producto(producto_id)

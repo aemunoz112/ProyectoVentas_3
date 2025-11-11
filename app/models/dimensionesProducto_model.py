@@ -1,13 +1,40 @@
-from pydantic import BaseModel
+from decimal import Decimal
+from typing import Optional
 from datetime import datetime
 
+from pydantic import BaseModel, Field
+
+
 class DimensionesProductoBaseModel(BaseModel):
-    id: int = None
+    ancho: Decimal = Field(..., ge=0)
+    espesor: Decimal = Field(..., ge=0)
+    diametro_interno: Decimal = Field(..., ge=0)
+    diametro_externo: Decimal = Field(..., ge=0)
+    estado: Optional[str] = "Activo"
+
+
+class DimensionesProductoCreateModel(DimensionesProductoBaseModel):
     id_producto: int
-    ancho: float
-    espesor: float
-    diametro_interno: float
-    diametro_externo: float
-    estado: str = "Activo"
-    created_at: datetime = None
-    updated_at: datetime = None
+
+
+class DimensionesProductoUpdateModel(BaseModel):
+    ancho: Optional[Decimal] = Field(default=None, ge=0)
+    espesor: Optional[Decimal] = Field(default=None, ge=0)
+    diametro_interno: Optional[Decimal] = Field(default=None, ge=0)
+    diametro_externo: Optional[Decimal] = Field(default=None, ge=0)
+    estado: Optional[str] = None
+
+
+class DimensionesProductoResponseModel(DimensionesProductoBaseModel):
+    id: int
+    id_producto: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+__all__ = [
+    "DimensionesProductoBaseModel",
+    "DimensionesProductoCreateModel",
+    "DimensionesProductoUpdateModel",
+    "DimensionesProductoResponseModel",
+]

@@ -23,10 +23,13 @@ class VentaDetalleCreate(VentaDetalleBase):
 
 class VentaDetalleResponse(VentaDetalleBase):
     id: int
-    precio_total: Decimal
-    precio_extranjero: Decimal
-    precio_total_extranjero: Decimal
+    id_producto: int
+    precio_total: Optional[Decimal] = None
+    precio_extranjero: Optional[Decimal] = None
+    precio_total_extranjero: Optional[Decimal] = None
     producto_nombre: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class VentaBase(BaseModel):
@@ -34,17 +37,13 @@ class VentaBase(BaseModel):
     id_cliente: int
     id_vendedor: int
     moneda: str = Field(default="COP")
-    trm: Decimal = Field(default=Decimal("1"), alias="trm")
+    trm: Decimal = Field(default=Decimal("1"))
     oc_cliente: Optional[str] = None
     condicion_pago: Optional[str] = None
-    detalles: List[VentaDetalleCreate]
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 class VentaCreate(VentaBase):
-    pass
+    detalles: List[VentaDetalleCreate] = Field(default_factory=list)
 
 
 class VentaUpdate(BaseModel):
@@ -52,20 +51,25 @@ class VentaUpdate(BaseModel):
     id_cliente: Optional[int] = None
     id_vendedor: Optional[int] = None
     moneda: Optional[str] = None
-    trm: Optional[Decimal] = Field(default=None, alias="trm")
+    trm: Optional[Decimal] = None
     oc_cliente: Optional[str] = None
     condicion_pago: Optional[str] = None
     detalles: Optional[List[VentaDetalleCreate]] = None
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 class VentaResponse(VentaBase):
     id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    detalles: List[VentaDetalleResponse]
+    detalles: List[VentaDetalleResponse] = Field(default_factory=list)
 
-    class Config:
-        allow_population_by_field_name = True
+
+__all__ = [
+    "VentaDetalleBase",
+    "VentaDetalleCreate",
+    "VentaDetalleResponse",
+    "VentaBase",
+    "VentaCreate",
+    "VentaUpdate",
+    "VentaResponse",
+]

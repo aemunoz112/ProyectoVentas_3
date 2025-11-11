@@ -1,104 +1,86 @@
-from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
+from decimal import Decimal
+from typing import List
+
 import mysql.connector
+from fastapi import HTTPException
+
 from app.config.db_config import get_db_connection
+from app.models.dimensionesProducto_model import (
+    DimensionesProductoCreateModel,
+    DimensionesProductoResponseModel,
+    DimensionesProductoUpdateModel,
+)
+
 
 class DimensionProductoController:
 
-    def create_dimension(self, dimension):
+    def create_dimension(self, dimension: DimensionesProductoCreateModel) -> DimensionesProductoResponseModel:
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id FROM productos WHERE id = %s", (dimension.id_producto,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Producto asociado no encontrado")
 
-            query = """
-            INSERT INTO dimensiones_producto (id_producto, ancho, espesor, diametro_interno, diametro_externo)
-            VALUES (%s, %s, %s, %s, %s)
-            """
-            values = (
-                dimension.id_producto,
-                dimension.ancho,
-                dimension.espesor,
-                dimension.diametro_interno,
-                dimension.diametro_externo
+            cursor.execute(
+                """
+                INSERT INTO dimensiones_producto
+                    (id_producto, ancho, espesor, diametro_interno, diametro_externo, created_at, updated_at)
+                VALUES
+                    (%s, %s, %s, %s, %s, NOW(), NOW())
+                """,
+                (
+                    dimension.id_producto,
+                    str(dimension.ancho),
+                    str(dimension.espesor),
+                    str(dimension.diametro_interno),
+                    str(dimension.diametro_externo),
+                ),
             )
-
-            cursor.execute(query, values)
             conn.commit()
-
-            return {"mensaje": "Dimensión creada exitosamente"}
-
+            nuevo_id = cursor.lastrowid
+            return self.get_dimension(nuevo_id)
         except mysql.connector.Error as err:
             print(f"Error al crear dimensión: {err}")
             conn.rollback()
             raise HTTPException(status_code=500, detail="Error al crear dimensión")
-
         finally:
+            cursor.close()
             conn.close()
 
-    def get_dimension(self, dimension_id: int):
+    def get_dimension(self, dimension_id: int) -> DimensionesProductoResponseModel:
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM dimensiones_producto WHERE id = %s", (dimension_id,))
             result = cursor.fetchone()
 
             if not result:
                 raise HTTPException(status_code=404, detail="Dimensión no encontrada")
 
-            content = {
-                "id": result[0],
-                "id_producto": result[1],
-                "ancho": result[2],
-                "espesor": result[3],
-                "diametro_interno": result[4],
-                "diametro_externo": result[5],
-                "created_at": str(result[6]),
-                "updated_at": str(result[7])
-            }
-
-            return jsonable_encoder(content)
-
+            return self._mapear_dimension(result)
         except mysql.connector.Error as err:
             print(f"Error al obtener dimensión: {err}")
             raise HTTPException(status_code=500, detail="Error al obtener dimensión")
-
         finally:
+            cursor.close()
             conn.close()
 
-    def get_dimensiones(self):
+    def get_dimensiones(self) -> List[DimensionesProductoResponseModel]:
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM dimensiones_producto")
-            result = cursor.fetchall()
-
-            if not result:
-                raise HTTPException(status_code=404, detail="No se encontraron dimensiones")
-
-            payload = [
-                {
-                    "id": data[0],
-                    "id_producto": data[1],
-                    "ancho": data[2],
-                    "espesor": data[3],
-                    "diametro_interno": data[4],
-                    "diametro_externo": data[5],
-                    "created_at": str(data[6]),
-                    "updated_at": str(data[7])
-                }
-                for data in result
-            ]
-
-            return {"resultado": jsonable_encoder(payload)}
-
+            result = cursor.fetchall() or []
+            return [self._mapear_dimension(data) for data in result]
         except mysql.connector.Error as err:
             print(f"Error al listar dimensiones: {err}")
             raise HTTPException(status_code=500, detail="Error al listar dimensiones")
-
         finally:
+            cursor.close()
             conn.close()
 
-    def update_dimension(self, dimension_id: int, dimension):
+    def update_dimension(self, dimension_id: int, dimension: DimensionesProductoUpdateModel) -> DimensionesProductoResponseModel:
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -107,35 +89,39 @@ class DimensionProductoController:
             if not cursor.fetchone():
                 raise HTTPException(status_code=404, detail="Dimensión no encontrada")
 
-            query = """
-            UPDATE dimensiones_producto
-            SET id_producto = %s,
-                ancho = %s,
-                espesor = %s,
-                diametro_interno = %s,
-                diametro_externo = %s
-            WHERE id = %s
-            """
-            values = (
-                dimension.id_producto,
-                dimension.ancho,
-                dimension.espesor,
-                dimension.diametro_interno,
-                dimension.diametro_externo,
-                dimension_id
-            )
+            campos = []
+            valores = []
+            for campo in [
+                "ancho",
+                "espesor",
+                "diametro_interno",
+                "diametro_externo",
+                "estado",
+            ]:
+                valor = getattr(dimension, campo, None)
+                if valor is not None:
+                    campos.append(f"{campo} = %s")
+                    valores.append(str(valor) if isinstance(valor, Decimal) else valor)
 
-            cursor.execute(query, values)
-            conn.commit()
+            if campos:
+                valores.extend([dimension_id])
+                cursor.execute(
+                    f"""
+                    UPDATE dimensiones_producto
+                    SET {', '.join(campos)}, updated_at = NOW()
+                    WHERE id = %s
+                    """,
+                    tuple(valores),
+                )
+                conn.commit()
 
-            return {"mensaje": f"Dimensión con ID {dimension_id} actualizada correctamente"}
-
+            return self.get_dimension(dimension_id)
         except mysql.connector.Error as err:
             print(f"Error al actualizar dimensión: {err}")
             conn.rollback()
             raise HTTPException(status_code=500, detail="Error al actualizar dimensión")
-
         finally:
+            cursor.close()
             conn.close()
 
     def delete_dimension(self, dimension_id: int):
@@ -149,13 +135,25 @@ class DimensionProductoController:
 
             cursor.execute("DELETE FROM dimensiones_producto WHERE id = %s", (dimension_id,))
             conn.commit()
-
             return {"mensaje": f"Dimensión con ID {dimension_id} eliminada correctamente"}
-
         except mysql.connector.Error as err:
             print(f"Error al eliminar dimensión: {err}")
             conn.rollback()
             raise HTTPException(status_code=500, detail="Error al eliminar dimensión")
-
         finally:
+            cursor.close()
             conn.close()
+
+    @staticmethod
+    def _mapear_dimension(datos: dict) -> DimensionesProductoResponseModel:
+        return DimensionesProductoResponseModel(
+            id=datos["id"],
+            id_producto=datos["id_producto"],
+            ancho=datos["ancho"],
+            espesor=datos["espesor"],
+            diametro_interno=datos["diametro_interno"],
+            diametro_externo=datos["diametro_externo"],
+            estado="Activo",
+            created_at=datos.get("created_at"),
+            updated_at=datos.get("updated_at"),
+        )

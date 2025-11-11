@@ -1,27 +1,42 @@
-from fastapi import APIRouter
-from app.controllers.dimensionesProducto_controller import *
-from app.models.dimensionesProducto_model import DimensionesProductoBaseModel as Dimension
+from typing import List
 
-router = APIRouter()
+from fastapi import APIRouter, status
 
-nuevo_dimension = DimensionProductoController()
+from app.controllers.dimensionesProducto_controller import DimensionProductoController
+from app.models.dimensionesProducto_model import (
+    DimensionesProductoCreateModel,
+    DimensionesProductoResponseModel,
+    DimensionesProductoUpdateModel,
+)
 
-@router.post("/create_dimension_producto")
-async def create_dimension(dimension: Dimension):
-    rpta = nuevo_dimension.create_dimension(dimension)
-    return rpta
+router = APIRouter(prefix="/dimensiones", tags=["dimensiones"])
+controller = DimensionProductoController()
 
-@router.get("/get_dimension_producto/{inventario_id}")
-async def get_dimensio(dimension_id: int):
-    rpta = nuevo_dimension.get_dimension(dimension_id)
-    return rpta
 
-@router.get("/get_dimensiones_productos/")
-async def get_inventarios():
-    rpta = nuevo_dimension.get_dimensiones()
-    return rpta
+@router.get("/", response_model=List[DimensionesProductoResponseModel])
+async def listar_dimensiones():
+    return controller.get_dimensiones()
 
-@router.delete("/delete_dimension_producto/{inventario_id}")
-async def delete_dimension(inventario_id: int):
-    rpta = nuevo_dimension.delete_dimension(inventario_id)
-    return rpta
+
+@router.get("/{dimension_id}", response_model=DimensionesProductoResponseModel)
+async def obtener_dimension(dimension_id: int):
+    return controller.get_dimension(dimension_id)
+
+
+@router.post(
+    "/",
+    response_model=DimensionesProductoResponseModel,
+    status_code=status.HTTP_201_CREATED,
+)
+async def crear_dimension(dimension: DimensionesProductoCreateModel):
+    return controller.create_dimension(dimension)
+
+
+@router.put("/{dimension_id}", response_model=DimensionesProductoResponseModel)
+async def actualizar_dimension(dimension_id: int, dimension: DimensionesProductoUpdateModel):
+    return controller.update_dimension(dimension_id, dimension)
+
+
+@router.delete("/{dimension_id}")
+async def eliminar_dimension(dimension_id: int):
+    return controller.delete_dimension(dimension_id)
