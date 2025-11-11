@@ -4,6 +4,7 @@ import json
 
 from app.config.db_config import get_db_connection
 from app.controllers.menu_controller import MenuController
+from app.controllers.favorito_controller import FavoritoController
 
 
 class AuthController:
@@ -60,6 +61,7 @@ class AuthController:
             }
 
             menu_controller = MenuController()
+            favorito_controller = FavoritoController()
             try:
                 menu_tree = menu_controller.get_menu_tree_by_role(rol_data["id"])
             except HTTPException as menu_error:
@@ -67,11 +69,14 @@ class AuthController:
                 print(f"Advertencia al obtener menú para el rol {rol_data['id']}: {menu_error.detail}")
                 menu_tree = []
 
+            favoritos = favorito_controller.listar_favoritos(usuario_data["id"], rol_data["id"])
+
             return {
                 "usuario": usuario_data,
                 "rol": rol_data,
                 "menu": menu_tree,
-                "modulos": menu_tree
+                "modulos": menu_tree,
+                "favoritos": [favorito.dict() for favorito in favoritos]
             }
 
         except mysql.connector.Error as err:

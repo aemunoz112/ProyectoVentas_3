@@ -16,6 +16,8 @@ from app.routes.rol_routes import router as rol_router
 from app.routes.atributo_routes import router as atributo_router
 from app.routes.atributoXusuario_routes import router as atributoXusuario_router
 from app.routes.estado_routes import router as estado_router
+from app.routes.favorito_routes import router as favorito_router
+from app.routes.venta_routes import router as venta_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -53,7 +55,8 @@ app.include_router(encabezado_router)
 app.include_router(detallePedido_router)
 app.include_router(ordenes_router)
 app.include_router(detalle_router)
-
+app.include_router(favorito_router)
+app.include_router(venta_router)
 
 
 if __name__ == "__main__":
