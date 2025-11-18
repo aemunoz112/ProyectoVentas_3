@@ -6,7 +6,7 @@ from app.routes.inventario_routes import router as inventario_router
 from app.routes.dimensionesProducto_routes import router as dimension_router
 from app.routes.DetalleWo_routes import router as detalle_router
 from app.routes.ordenesProduccion_routes import router as ordenes_router
-from app.routes.encabezadoPedido_routes import router as encabezado_router
+# from app.routes.encabezadoPedido_routes import router as encabezado_router  # Usando ventas en su lugar
 from app.routes.detallePedido_routes import router as detallePedido_router
 from app.routes.modulo_routes import router as modulo_router
 from app.routes.moduloXrol_routes import router as moduloXrol_router
@@ -51,7 +51,7 @@ app.include_router(estado_router)
 app.include_router(producto_router)
 app.include_router(inventario_router)
 app.include_router(dimension_router)
-app.include_router(encabezado_router)
+# app.include_router(encabezado_router)  # Usando ventas en su lugar
 app.include_router(detallePedido_router)
 app.include_router(ordenes_router)
 app.include_router(detalle_router)

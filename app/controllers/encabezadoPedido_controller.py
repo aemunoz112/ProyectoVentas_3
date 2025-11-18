@@ -11,8 +11,8 @@ class EncabezadoPedidosController:
             cursor = conn.cursor()
 
             query = """
-            INSERT INTO encabezado_pedidos (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO encabezado_pedidos (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, departamento_id, ciudad_id, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
             """
             values = (
                 encabezado.tipo_pedido,
@@ -21,7 +21,9 @@ class EncabezadoPedidosController:
                 encabezado.moneda,
                 encabezado.TRM,
                 encabezado.OC_cliente,
-                encabezado.condicion_pago
+                encabezado.condicion_pago,
+                encabezado.departamento_id,
+                encabezado.ciudad_id
             )
 
             cursor.execute(query, values)
@@ -40,7 +42,7 @@ class EncabezadoPedidosController:
     def get_encabezadoPedido(self, encabezado_id: int):
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM encabezado_pedidos WHERE id = %s", (encabezado_id,))
             result = cursor.fetchone()
 
@@ -48,16 +50,18 @@ class EncabezadoPedidosController:
                 raise HTTPException(status_code=404, detail="Encabezado de pedido no encontrado")
 
             content = {
-                "id": int(result[0]),
-                "tipo_pedido": result[1],
-                "id_cliente": int(result[2]),
-                "id_vendedor": int(result[3]),
-                "moneda": result[4],
-                "TRM": float(result[5]) if result[5] is not None else None,
-                "OC_cliente": result[6],
-                "condicion_pago": result[7],
-                "created_at": str(result[8]),
-                "updated_at": str(result[9])
+                "id": int(result["id"]),
+                "tipo_pedido": result["tipo_pedido"],
+                "id_cliente": int(result["id_cliente"]),
+                "id_vendedor": int(result["id_vendedor"]),
+                "moneda": result["moneda"],
+                "TRM": float(result["TRM"]) if result.get("TRM") is not None else None,
+                "OC_cliente": result.get("OC_cliente"),
+                "condicion_pago": result.get("condicion_pago"),
+                "departamento_id": int(result["departamento_id"]) if result.get("departamento_id") is not None else None,
+                "ciudad_id": int(result["ciudad_id"]) if result.get("ciudad_id") is not None else None,
+                "created_at": str(result["created_at"]) if result.get("created_at") else None,
+                "updated_at": str(result["updated_at"]) if result.get("updated_at") else None
             }
 
             return jsonable_encoder(content)
@@ -72,7 +76,7 @@ class EncabezadoPedidosController:
     def get_encabezadosPedidos(self):
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM encabezado_pedidos")
             result = cursor.fetchall()
 
@@ -81,16 +85,18 @@ class EncabezadoPedidosController:
 
             payload = [
                 {
-                    "id": data[0],
-                    "tipo_pedido": data[1],
-                    "id_cliente": data[2],
-                    "id_vendedor": data[3],
-                    "moneda": data[4],
-                    "TRM": data[5],
-                    "OC_cliente": data[6],
-                    "condicion_pago": data[7],
-                    "created_at": str(data[8]),
-                    "updated_at": str(data[9])
+                    "id": int(data["id"]),
+                    "tipo_pedido": data["tipo_pedido"],
+                    "id_cliente": int(data["id_cliente"]),
+                    "id_vendedor": int(data["id_vendedor"]),
+                    "moneda": data["moneda"],
+                    "TRM": float(data["TRM"]) if data.get("TRM") is not None else None,
+                    "OC_cliente": data.get("OC_cliente"),
+                    "condicion_pago": data.get("condicion_pago"),
+                    "departamento_id": int(data["departamento_id"]) if data.get("departamento_id") is not None else None,
+                    "ciudad_id": int(data["ciudad_id"]) if data.get("ciudad_id") is not None else None,
+                    "created_at": str(data["created_at"]) if data.get("created_at") else None,
+                    "updated_at": str(data["updated_at"]) if data.get("updated_at") else None
                 } for data in result
             ]
 
@@ -106,7 +112,7 @@ class EncabezadoPedidosController:
     def get_encabezadosByCliente(self, id_cliente: int):
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM encabezado_pedidos WHERE id_cliente = %s", (id_cliente,))
             result = cursor.fetchall()
 
@@ -115,16 +121,18 @@ class EncabezadoPedidosController:
 
             payload = [
                 {
-                    "id": data[0],
-                    "tipo_pedido": data[1],
-                    "id_cliente": data[2],
-                    "id_vendedor": data[3],
-                    "moneda": data[4],
-                    "TRM": data[5],
-                    "OC_cliente": data[6],
-                    "condicion_pago": data[7],
-                    "created_at": str(data[8]),
-                    "updated_at": str(data[9])
+                    "id": int(data["id"]),
+                    "tipo_pedido": data["tipo_pedido"],
+                    "id_cliente": int(data["id_cliente"]),
+                    "id_vendedor": int(data["id_vendedor"]),
+                    "moneda": data["moneda"],
+                    "TRM": float(data["TRM"]) if data.get("TRM") is not None else None,
+                    "OC_cliente": data.get("OC_cliente"),
+                    "condicion_pago": data.get("condicion_pago"),
+                    "departamento_id": int(data["departamento_id"]) if data.get("departamento_id") is not None else None,
+                    "ciudad_id": int(data["ciudad_id"]) if data.get("ciudad_id") is not None else None,
+                    "created_at": str(data["created_at"]) if data.get("created_at") else None,
+                    "updated_at": str(data["updated_at"]) if data.get("updated_at") else None
                 } for data in result
             ]
 
@@ -154,7 +162,10 @@ class EncabezadoPedidosController:
                 moneda = %s,
                 TRM = %s,
                 OC_cliente = %s,
-                condicion_pago = %s
+                condicion_pago = %s,
+                departamento_id = %s,
+                ciudad_id = %s,
+                updated_at = NOW()
             WHERE id = %s
             """
             values = (
@@ -165,6 +176,8 @@ class EncabezadoPedidosController:
                 encabezado.TRM,
                 encabezado.OC_cliente,
                 encabezado.condicion_pago,
+                encabezado.departamento_id,
+                encabezado.ciudad_id,
                 encabezado_id
             )
 

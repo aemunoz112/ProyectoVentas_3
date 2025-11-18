@@ -32,9 +32,9 @@ class ProductoController:
             if not productos:
                 return []
 
-            ids = [prod["id"] for prod in productos]
+            ids = [prod.get("id", 0) for prod in productos if prod.get("id")]
             dimensiones = self._obtener_dimensiones(cursor, ids)
-            return [self._mapear_producto(prod, dimensiones.get(prod["id"], [])) for prod in productos]
+            return [self._mapear_producto(prod, dimensiones.get(prod.get("id", 0), [])) for prod in productos]
         except mysql.connector.Error as err:
             print(f"Error al listar productos: {err}")
             raise HTTPException(status_code=500, detail="Error al obtener los productos")
@@ -189,14 +189,14 @@ class ProductoController:
         filas = cursor.fetchall() or []
         agrupado: Dict[int, List[DimensionesProductoResponseModel]] = defaultdict(list)
         for fila in filas:
-            agrupado[fila["id_producto"]].append(self._mapear_dimension(fila))
+            agrupado[fila.get("id_producto", 0)].append(self._mapear_dimension(fila))
         return agrupado
 
     def _mapear_producto(self, datos: dict, dimensiones: List[DimensionesProductoResponseModel]) -> ProductoResponseModel:
         return ProductoResponseModel(
-            id=datos["id"],
-            codigo_producto=datos["codigo_producto"],
-            nombre_producto=datos["nombre_producto"],
+            id=datos.get("id", 0),
+            codigo_producto=datos.get("codigo_producto", ""),
+            nombre_producto=datos.get("nombre_producto", ""),
             descripcion=datos.get("descripcion"),
             categoria=datos.get("categoria"),
             unidad_medida=datos.get("unidad_medida"),
@@ -208,8 +208,8 @@ class ProductoController:
 
     def _mapear_dimension(self, datos: dict) -> DimensionesProductoResponseModel:
         return DimensionesProductoResponseModel(
-            id=datos["id"],
-            id_producto=datos["id_producto"],
+            id=datos.get("id", 0),
+            id_producto=datos.get("id_producto", 0),
             ancho=self._decimal_a_decimal(datos.get("ancho")),
             espesor=self._decimal_a_decimal(datos.get("espesor")),
             diametro_interno=self._decimal_a_decimal(datos.get("diametro_interno")),

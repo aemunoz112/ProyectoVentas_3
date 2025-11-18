@@ -1,19 +1,15 @@
-from collections import defaultdict
+from typing import List
 from decimal import Decimal
-from typing import Dict, List
 
-import mysql.connector
 from fastapi import HTTPException
-
+import mysql.connector
 from app.config.db_config import get_db_connection
 from app.models.venta_model import (
     VentaCreate,
-    VentaDetalleCreate,
-    VentaDetalleResponse,
     VentaResponse,
     VentaUpdate,
+    VentaDetalleResponse,
 )
-
 
 class VentaController:
 
@@ -21,24 +17,67 @@ class VentaController:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute(
-                """
-                SELECT id, tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente,
-                       condicion_pago, created_at, updated_at
-                FROM encabezado_pedidos
-                ORDER BY created_at DESC, id DESC
-                """
-            )
+            cursor.execute("""
+                SELECT * FROM encabezado_pedidos 
+                ORDER BY created_at DESC
+            """)
             encabezados = cursor.fetchall()
-            if not encabezados:
-                return []
 
-            pedido_ids = [row["id"] for row in encabezados]
-            detalles_por_pedido = self._obtener_detalles_por_pedido(cursor, pedido_ids)
-            return [self._mapear_respuesta(encabezado, detalles_por_pedido.get(encabezado["id"], [])) for encabezado in encabezados]
+            ventas = []
+            for enc in encabezados:
+                # Obtener detalles del pedido
+                cursor.execute("""
+                    SELECT dp.*, p.nombre_producto as producto_nombre
+                    FROM detalle_pedidos dp
+                    LEFT JOIN productos p ON dp.id_producto = p.id
+                    WHERE dp.id_pedido = %s
+                    ORDER BY dp.numero_linea
+                """, (enc.get("id"),))
+                detalles_data = cursor.fetchall()
+
+                detalles = [
+                    VentaDetalleResponse(
+                        id=det.get("id"),
+                        id_producto=det.get("id_producto", 0),
+                        cantidad_solicitada=Decimal(str(det.get("cantidad_solicitada") or 0)),
+                        cantidad_confirmada=Decimal(str(det.get("cantidad_confirmada") or 0)) if det.get("cantidad_confirmada") else None,
+                        precio_unitario=Decimal(str(det.get("precio_unitario") or 0)),
+                        numero_linea=det.get("numero_linea"),
+                        numero_documento=det.get("numero_documento"),
+                        tipo_documento=det.get("tipo_documento"),
+                        estado_siguiente=det.get("estado_siguiente", 1),
+                        estado_anterior=det.get("estado_anterior", 1),
+                        precio_total=Decimal(str(det.get("precio_total") or 0)) if det.get("precio_total") else None,
+                        precio_extranjero=Decimal(str(det.get("precio_extranjero") or 0)) if det.get("precio_extranjero") else None,
+                        precio_total_extranjero=Decimal(str(det.get("precio_total_extranjero") or 0)) if det.get("precio_total_extranjero") else None,
+                        producto_nombre=det.get("producto_nombre"),
+                        created_at=det.get("created_at"),
+                        updated_at=det.get("updated_at"),
+                    )
+                    for det in detalles_data
+                ]
+
+                venta = VentaResponse(
+                    id=enc.get("id"),
+                    tipo_pedido=enc.get("tipo_pedido"),
+                    id_cliente=enc.get("id_cliente"),
+                    id_vendedor=enc.get("id_vendedor"),
+                    moneda=enc.get("moneda"),
+                    trm=Decimal(str(enc.get("TRM") or 1)),
+                    oc_cliente=enc.get("OC_cliente"),
+                    condicion_pago=enc.get("condicion_pago"),
+                    departamento_id=enc.get("departamento_id"),
+                    ciudad_id=enc.get("ciudad_id"),
+                    created_at=enc.get("created_at"),
+                    updated_at=enc.get("updated_at"),
+                    detalles=detalles,
+                )
+                ventas.append(venta)
+
+            return ventas
         except mysql.connector.Error as err:
-            print(f"Error al listar pedidos: {err}")
-            raise HTTPException(status_code=500, detail="Error al obtener las ventas")
+            print(f"Error al listar ventas: {err}")
+            raise HTTPException(status_code=500, detail="Error al listar ventas")
         finally:
             cursor.close()
             conn.close()
@@ -47,24 +86,62 @@ class VentaController:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute(
-                """
-                SELECT id, tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente,
-                       condicion_pago, created_at, updated_at
-                FROM encabezado_pedidos
-                WHERE id = %s
-                """,
-                (venta_id,),
-            )
-            encabezado = cursor.fetchone()
-            if not encabezado:
-                raise HTTPException(status_code=404, detail="Pedido no encontrado")
+            cursor.execute("SELECT * FROM encabezado_pedidos WHERE id = %s", (venta_id,))
+            enc = cursor.fetchone()
 
-            detalles = self._obtener_detalles_por_pedido(cursor, [venta_id]).get(venta_id, [])
-            return self._mapear_respuesta(encabezado, detalles)
+            if not enc:
+                raise HTTPException(status_code=404, detail="Venta no encontrada")
+
+            # Obtener detalles
+            cursor.execute("""
+                SELECT dp.*, p.nombre_producto as producto_nombre
+                FROM detalle_pedidos dp
+                LEFT JOIN productos p ON dp.id_producto = p.id
+                WHERE dp.id_pedido = %s
+                ORDER BY dp.numero_linea
+            """, (venta_id,))
+            detalles_data = cursor.fetchall()
+
+            detalles = [
+                VentaDetalleResponse(
+                    id=det.get("id"),
+                    id_producto=det.get("id_producto", 0),
+                    cantidad_solicitada=Decimal(str(det.get("cantidad_solicitada") or 0)),
+                    cantidad_confirmada=Decimal(str(det.get("cantidad_confirmada") or 0)) if det.get("cantidad_confirmada") else None,
+                    precio_unitario=Decimal(str(det.get("precio_unitario") or 0)),
+                    numero_linea=det.get("numero_linea"),
+                    numero_documento=det.get("numero_documento"),
+                    tipo_documento=det.get("tipo_documento"),
+                    estado_siguiente=det.get("estado_siguiente", 1),
+                    estado_anterior=det.get("estado_anterior", 1),
+                    precio_total=Decimal(str(det.get("precio_total") or 0)) if det.get("precio_total") else None,
+                    precio_extranjero=Decimal(str(det.get("precio_extranjero") or 0)) if det.get("precio_extranjero") else None,
+                    precio_total_extranjero=Decimal(str(det.get("precio_total_extranjero") or 0)) if det.get("precio_total_extranjero") else None,
+                    producto_nombre=det.get("producto_nombre"),
+                    created_at=det.get("created_at"),
+                    updated_at=det.get("updated_at"),
+                )
+                for det in detalles_data
+            ]
+
+            return VentaResponse(
+                id=enc.get("id"),
+                tipo_pedido=enc.get("tipo_pedido"),
+                id_cliente=enc.get("id_cliente"),
+                id_vendedor=enc.get("id_vendedor"),
+                moneda=enc.get("moneda"),
+                trm=Decimal(str(enc.get("TRM") or 1)),
+                oc_cliente=enc.get("OC_cliente"),
+                condicion_pago=enc.get("condicion_pago"),
+                departamento_id=enc.get("departamento_id"),
+                ciudad_id=enc.get("ciudad_id"),
+                created_at=enc.get("created_at"),
+                updated_at=enc.get("updated_at"),
+                detalles=detalles,
+            )
         except mysql.connector.Error as err:
-            print(f"Error al obtener pedido: {err}")
-            raise HTTPException(status_code=500, detail="Error al obtener la venta")
+            print(f"Error al obtener venta: {err}")
+            raise HTTPException(status_code=500, detail="Error al obtener venta")
         finally:
             cursor.close()
             conn.close()
@@ -80,9 +157,9 @@ class VentaController:
             cursor.execute(
                 """
                 INSERT INTO encabezado_pedidos
-                    (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, created_at, updated_at)
+                    (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, departamento_id, ciudad_id, created_at, updated_at)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                 """,
                 (
                     venta.tipo_pedido,
@@ -92,6 +169,8 @@ class VentaController:
                     str(venta.trm or Decimal("1")),
                     venta.oc_cliente,
                     venta.condicion_pago,
+                    venta.departamento_id,
+                    venta.ciudad_id,
                 ),
             )
             pedido_id = cursor.lastrowid
@@ -128,6 +207,8 @@ class VentaController:
                     TRM = %s,
                     OC_cliente = %s,
                     condicion_pago = %s,
+                    departamento_id = %s,
+                    ciudad_id = %s,
                     updated_at = NOW()
                 WHERE id = %s
                 """,
@@ -139,6 +220,8 @@ class VentaController:
                     str(trm),
                     venta.oc_cliente if venta.oc_cliente is not None else actual["OC_cliente"],
                     venta.condicion_pago if venta.condicion_pago is not None else actual["condicion_pago"],
+                    venta.departamento_id if venta.departamento_id is not None else actual.get("departamento_id"),
+                    venta.ciudad_id if venta.ciudad_id is not None else actual.get("ciudad_id"),
                     venta_id,
                 ),
             )
@@ -177,117 +260,36 @@ class VentaController:
             cursor.close()
             conn.close()
 
-    def _obtener_detalles_por_pedido(self, cursor, pedido_ids: List[int]) -> Dict[int, List[dict]]:
-        if not pedido_ids:
-            return {}
-        marcadores = ",".join(["%s"] * len(pedido_ids))
-        cursor.execute(
-            f"""
-            SELECT d.*, p.nombre_producto
-            FROM detalle_pedidos d
-            LEFT JOIN productos p ON p.id = d.id_producto
-            WHERE d.id_pedido IN ({marcadores})
-            ORDER BY d.id_pedido, d.numero_linea
-            """,
-            tuple(pedido_ids),
-        )
-        filas = cursor.fetchall()
-        agrupado: Dict[int, List[dict]] = defaultdict(list)
-        for fila in filas:
-            agrupado[fila["id_pedido"]].append(fila)
-        return agrupado
+    def _insertar_detalles(self, cursor, pedido_id: int, detalles, moneda: str, trm: Decimal):
+        """Método auxiliar para insertar los detalles del pedido"""
+        for idx, detalle in enumerate(detalles, start=1):
+            precio_total = detalle.cantidad_solicitada * detalle.precio_unitario
+            precio_extranjero = precio_total / trm if trm and trm > 0 else precio_total
+            precio_total_extranjero = precio_extranjero
 
-    def _mapear_respuesta(self, encabezado: dict, detalles: List[dict]) -> VentaResponse:
-        detalles_respuesta = [self._mapear_detalle(detalle) for detalle in detalles]
-        return VentaResponse(
-            id=encabezado["id"],
-            tipo_pedido=encabezado["tipo_pedido"],
-            id_cliente=encabezado["id_cliente"],
-            id_vendedor=encabezado["id_vendedor"],
-            moneda=encabezado["moneda"],
-            trm=Decimal(str(encabezado.get("TRM") or 1)),
-            oc_cliente=encabezado.get("OC_cliente"),
-            condicion_pago=encabezado.get("condicion_pago"),
-            created_at=encabezado.get("created_at"),
-            updated_at=encabezado.get("updated_at"),
-            detalles=detalles_respuesta,
-        )
+            cursor.execute(
+                """
+                INSERT INTO detalle_pedidos
+                    (id_pedido, id_producto, numero_linea, cantidad_solicitada, cantidad_confirmada,
+                     precio_unitario, precio_total, precio_extranjero, precio_total_extranjero,
+                     numero_documento, tipo_documento, estado_siguiente, estado_anterior, created_at, updated_at)
+                VALUES
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                """,
+                (
+                    pedido_id,
+                    detalle.id_producto,
+                    detalle.numero_linea or idx,
+                    str(detalle.cantidad_solicitada),
+                    str(detalle.cantidad_confirmada) if detalle.cantidad_confirmada else None,
+                    str(detalle.precio_unitario),
+                    str(precio_total),
+                    str(precio_extranjero),
+                    str(precio_total_extranjero),
+                    detalle.numero_documento,
+                    detalle.tipo_documento,
+                    detalle.estado_siguiente,
+                    detalle.estado_anterior,
+                ),
+            )
 
-    def _mapear_detalle(self, detalle: dict) -> VentaDetalleResponse:
-        return VentaDetalleResponse(
-            id=detalle["id"],
-            id_producto=detalle["id_producto"],
-            cantidad_solicitada=Decimal(str(detalle["cantidad_solicitada"])),
-            cantidad_confirmada=Decimal(str(detalle.get("cantidad_confirmada") or detalle["cantidad_solicitada"])),
-            precio_unitario=Decimal(str(detalle.get("precio_unitario") or 0)),
-            precio_total=Decimal(str(detalle.get("precio_total") or 0)),
-            precio_extranjero=Decimal(str(detalle.get("precio_extranjero") or 0)),
-            precio_total_extranjero=Decimal(str(detalle.get("precio_total_extranjero") or 0)),
-            numero_linea=detalle.get("numero_linea"),
-            numero_documento=detalle.get("numero_documento"),
-            tipo_documento=detalle.get("tipo_documento"),
-            estado_siguiente=detalle.get("estado_siguiente"),
-            estado_anterior=detalle.get("estado_anterior"),
-            producto_nombre=detalle.get("nombre_producto"),
-        )
-
-    def _insertar_detalles(
-        self,
-        cursor,
-        pedido_id: int,
-        detalles: List[VentaDetalleCreate],
-        moneda: str,
-        trm_valor: Decimal,
-    ) -> None:
-        trm = Decimal(str(trm_valor or 1))
-        moneda_normalizada = (moneda or "COP").upper()
-        for indice, detalle in enumerate(detalles, start=1):
-            self._insertar_detalle(cursor, pedido_id, detalle, indice, moneda_normalizada, trm)
-
-    def _insertar_detalle(
-        self,
-        cursor,
-        pedido_id: int,
-        detalle: VentaDetalleCreate,
-        indice: int,
-        moneda: str,
-        trm: Decimal,
-    ) -> None:
-        cantidad = Decimal(str(detalle.cantidad_solicitada))
-        precio_unitario = Decimal(str(detalle.precio_unitario))
-        precio_total = cantidad * precio_unitario
-        cantidad_confirmada = (
-            Decimal(str(detalle.cantidad_confirmada)) if detalle.cantidad_confirmada is not None else cantidad
-        )
-        if moneda == "COP" or trm <= 0:
-            precio_extranjero = Decimal("0")
-            precio_total_extranjero = Decimal("0")
-        else:
-            precio_extranjero = precio_unitario / trm
-            precio_total_extranjero = precio_total / trm
-
-        cursor.execute(
-            """
-            INSERT INTO detalle_pedidos
-                (id_pedido, id_producto, numero_linea, cantidad_solicitada, cantidad_confirmada,
-                 precio_unitario, precio_total, precio_extranjero, precio_total_extranjero,
-                 numero_documento, tipo_documento, estado_siguiente, estado_anterior, created_at, updated_at)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-            """,
-            (
-                pedido_id,
-                detalle.id_producto,
-                detalle.numero_linea or indice,
-                str(cantidad),
-                str(cantidad_confirmada),
-                str(precio_unitario),
-                str(precio_total),
-                str(precio_extranjero),
-                str(precio_total_extranjero),
-                detalle.numero_documento,
-                detalle.tipo_documento,
-                detalle.estado_siguiente or 1,
-                detalle.estado_anterior or 1,
-            ),
-        )
