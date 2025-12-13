@@ -25,9 +25,14 @@ class DimensionesProductoUpdateModel(BaseModel):
     estado: Optional[str] = None
 
 
-class DimensionesProductoResponseModel(DimensionesProductoBaseModel):
+class DimensionesProductoResponseModel(BaseModel):
     id: int
     id_producto: int
+    ancho: Decimal = Field(default=Decimal("0"), ge=0)
+    espesor: Decimal = Field(default=Decimal("0"), ge=0)
+    diametro_interno: Decimal = Field(default=Decimal("0"), ge=0)
+    diametro_externo: Decimal = Field(default=Decimal("0"), ge=0)
+    estado: Optional[str] = "Activo"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

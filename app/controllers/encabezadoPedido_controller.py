@@ -11,8 +11,8 @@ class EncabezadoPedidosController:
             cursor = conn.cursor()
 
             query = """
-            INSERT INTO encabezado_pedidos (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, departamento_id, ciudad_id, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO encabezado_pedidos (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, direccion, departamento_id, ciudad_id, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
             """
             values = (
                 encabezado.tipo_pedido,
@@ -22,6 +22,7 @@ class EncabezadoPedidosController:
                 encabezado.TRM,
                 encabezado.OC_cliente,
                 encabezado.condicion_pago,
+                encabezado.direccion,
                 encabezado.departamento_id,
                 encabezado.ciudad_id
             )
@@ -58,6 +59,7 @@ class EncabezadoPedidosController:
                 "TRM": float(result["TRM"]) if result.get("TRM") is not None else None,
                 "OC_cliente": result.get("OC_cliente"),
                 "condicion_pago": result.get("condicion_pago"),
+                "direccion": result.get("direccion"),
                 "departamento_id": int(result["departamento_id"]) if result.get("departamento_id") is not None else None,
                 "ciudad_id": int(result["ciudad_id"]) if result.get("ciudad_id") is not None else None,
                 "created_at": str(result["created_at"]) if result.get("created_at") else None,
@@ -93,6 +95,7 @@ class EncabezadoPedidosController:
                     "TRM": float(data["TRM"]) if data.get("TRM") is not None else None,
                     "OC_cliente": data.get("OC_cliente"),
                     "condicion_pago": data.get("condicion_pago"),
+                    "direccion": data.get("direccion"),
                     "departamento_id": int(data["departamento_id"]) if data.get("departamento_id") is not None else None,
                     "ciudad_id": int(data["ciudad_id"]) if data.get("ciudad_id") is not None else None,
                     "created_at": str(data["created_at"]) if data.get("created_at") else None,
@@ -129,6 +132,7 @@ class EncabezadoPedidosController:
                     "TRM": float(data["TRM"]) if data.get("TRM") is not None else None,
                     "OC_cliente": data.get("OC_cliente"),
                     "condicion_pago": data.get("condicion_pago"),
+                    "direccion": data.get("direccion"),
                     "departamento_id": int(data["departamento_id"]) if data.get("departamento_id") is not None else None,
                     "ciudad_id": int(data["ciudad_id"]) if data.get("ciudad_id") is not None else None,
                     "created_at": str(data["created_at"]) if data.get("created_at") else None,
@@ -163,6 +167,7 @@ class EncabezadoPedidosController:
                 TRM = %s,
                 OC_cliente = %s,
                 condicion_pago = %s,
+                direccion = %s,
                 departamento_id = %s,
                 ciudad_id = %s,
                 updated_at = NOW()
@@ -176,6 +181,7 @@ class EncabezadoPedidosController:
                 encabezado.TRM,
                 encabezado.OC_cliente,
                 encabezado.condicion_pago,
+                encabezado.direccion,
                 encabezado.departamento_id,
                 encabezado.ciudad_id,
                 encabezado_id

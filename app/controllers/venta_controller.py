@@ -66,6 +66,7 @@ class VentaController:
                     trm=Decimal(str(enc.get("TRM") or 1)),
                     oc_cliente=enc.get("OC_cliente"),
                     condicion_pago=enc.get("condicion_pago"),
+                    direccion=enc.get("direccion"),
                     departamento_id=enc.get("departamento_id"),
                     ciudad_id=enc.get("ciudad_id"),
                     created_at=enc.get("created_at"),
@@ -133,6 +134,7 @@ class VentaController:
                 trm=Decimal(str(enc.get("TRM") or 1)),
                 oc_cliente=enc.get("OC_cliente"),
                 condicion_pago=enc.get("condicion_pago"),
+                direccion=enc.get("direccion"),
                 departamento_id=enc.get("departamento_id"),
                 ciudad_id=enc.get("ciudad_id"),
                 created_at=enc.get("created_at"),
@@ -157,9 +159,9 @@ class VentaController:
             cursor.execute(
                 """
                 INSERT INTO encabezado_pedidos
-                    (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, departamento_id, ciudad_id, created_at, updated_at)
+                    (tipo_pedido, id_cliente, id_vendedor, moneda, TRM, OC_cliente, condicion_pago, direccion, departamento_id, ciudad_id, created_at, updated_at)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                 """,
                 (
                     venta.tipo_pedido,
@@ -169,6 +171,7 @@ class VentaController:
                     str(venta.trm or Decimal("1")),
                     venta.oc_cliente,
                     venta.condicion_pago,
+                    venta.direccion,
                     venta.departamento_id,
                     venta.ciudad_id,
                 ),
@@ -207,6 +210,7 @@ class VentaController:
                     TRM = %s,
                     OC_cliente = %s,
                     condicion_pago = %s,
+                    direccion = %s,
                     departamento_id = %s,
                     ciudad_id = %s,
                     updated_at = NOW()
@@ -220,6 +224,7 @@ class VentaController:
                     str(trm),
                     venta.oc_cliente if venta.oc_cliente is not None else actual["OC_cliente"],
                     venta.condicion_pago if venta.condicion_pago is not None else actual["condicion_pago"],
+                    venta.direccion if venta.direccion is not None else actual.get("direccion"),
                     venta.departamento_id if venta.departamento_id is not None else actual.get("departamento_id"),
                     venta.ciudad_id if venta.ciudad_id is not None else actual.get("ciudad_id"),
                     venta_id,

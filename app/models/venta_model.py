@@ -40,6 +40,7 @@ class VentaBase(BaseModel):
     trm: Decimal = Field(default=Decimal("1"))
     oc_cliente: Optional[str] = None
     condicion_pago: Optional[str] = None
+    direccion: Optional[str] = None
     departamento_id: Optional[int] = None  # ID del departamento desde la API externa
     ciudad_id: Optional[int] = None  # ID de la ciudad desde la API externa
 
@@ -56,6 +57,7 @@ class VentaUpdate(BaseModel):
     trm: Optional[Decimal] = None
     oc_cliente: Optional[str] = None
     condicion_pago: Optional[str] = None
+    direccion: Optional[str] = None
     departamento_id: Optional[int] = None  # ID del departamento desde la API externa
     ciudad_id: Optional[int] = None  # ID de la ciudad desde la API externa
     detalles: Optional[List[VentaDetalleCreate]] = None

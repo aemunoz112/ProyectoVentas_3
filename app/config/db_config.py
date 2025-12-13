@@ -5,6 +5,6 @@ def get_db_connection():
         host="hopper.proxy.rlwy.net",
         user="root",
         password="AFnKSmajlBHrVGWucAoEzQjuusCGrxjE",
-        database="railway",  # <- reemplaza con tu DB en Railway
+        database="railway",  
         port=55790
     )

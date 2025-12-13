@@ -145,14 +145,23 @@ class DimensionProductoController:
             conn.close()
 
     @staticmethod
+    def _decimal_a_decimal(valor) -> Decimal:
+        """Convierte un valor a Decimal, manejando None y otros tipos."""
+        if valor is None:
+            return Decimal("0")
+        if isinstance(valor, Decimal):
+            return valor
+        return Decimal(str(valor))
+
+    @staticmethod
     def _mapear_dimension(datos: dict) -> DimensionesProductoResponseModel:
         return DimensionesProductoResponseModel(
-            id=datos["id"],
-            id_producto=datos["id_producto"],
-            ancho=datos["ancho"],
-            espesor=datos["espesor"],
-            diametro_interno=datos["diametro_interno"],
-            diametro_externo=datos["diametro_externo"],
+            id=datos.get("id", 0),
+            id_producto=datos.get("id_producto", 0),
+            ancho=DimensionProductoController._decimal_a_decimal(datos.get("ancho")),
+            espesor=DimensionProductoController._decimal_a_decimal(datos.get("espesor")),
+            diametro_interno=DimensionProductoController._decimal_a_decimal(datos.get("diametro_interno")),
+            diametro_externo=DimensionProductoController._decimal_a_decimal(datos.get("diametro_externo")),
             estado="Activo",
             created_at=datos.get("created_at"),
             updated_at=datos.get("updated_at"),

@@ -11,6 +11,7 @@ class EncabezadoPedidoBaseModel(BaseModel):
     TRM: float 
     OC_cliente: str
     condicion_pago: str = None
+    direccion: Optional[str] = None
     departamento_id: Optional[int] = None  # ID del departamento desde la API externa
     ciudad_id: Optional[int] = None  # ID de la ciudad desde la API externa
     created_at: datetime = None
